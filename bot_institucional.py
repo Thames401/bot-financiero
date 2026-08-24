@@ -34,16 +34,16 @@ ALERTAS_PROCESADAS = set()
 def encender_bot(message):
     global BOT_ACTIVO
     BOT_ACTIVO = True
-    bot.reply_to(message, "🟢 Sistema Activado. Monitoreando Forex Factory e IA de Groq (Gemma 2) en hora de Costa Rica...")
+    bot.reply_to(message, "🟢 Sistema Activado. Monitoreando Forex Factory con Llama en hora de Costa Rica...")
 
 @bot.message_handler(commands=['off'])
 def apagar_bot(message):
     global BOT_ACTIVO
     BOT_ACTIVO = False
-    bot.reply_to(message, "🔴 Sistema Pausado. IA desconectada de forma correcta.")
+    bot.reply_to(message, "🔴 Sistema Pausado. IA de Groq desconectada.")
 
 # =====================================================================
-# MOTOR COGNITIVO INTERMERCADO (Groq - Model: gemma2-9b-it)
+# MOTOR COGNITIVO INTERMERCADO (Groq - Model: Llama Funcional)
 # =====================================================================
 def consultar_groq(prompt):
     if not GROQ_API_KEY:
@@ -55,7 +55,7 @@ def consultar_groq(prompt):
         "Content-Type": "application/json"
     }
     data = {
-        "model": "gemma2-9b-it",  # Modelo de alta velocidad y libre de deprecación en Groq
+        "model": "llama-3.1-8b-instant",  # MODELO LLAMA ACTUALIZADO Y FUNCIONAL EN GROQ
         "messages": [
             {
                 "role": "system", 
@@ -131,7 +131,7 @@ def bucle_calendario_infinito():
 # =====================================================================
 @bot.message_handler(commands=['test'])
 def comando_testeo(message):
-    bot.reply_to(message, "⏳ Procesando matrices analíticas compactas con Groq...")
+    bot.reply_to(message, "⏳ Procesando matrices analíticas con Llama...")
     procesar_escenarios_10min("Nóminas No Agrícolas (NFP)", "USD", "150K", "180K")
     time.sleep(2)
     procesar_dato_publicado("Nóminas No Agrícolas (NFP)", "USD", "180K", "220K")
@@ -145,7 +145,7 @@ def abrir_puerto_falso_render():
         def do_GET(self):
             self.send_response(200)
             self.end_headers()
-            self.wfile.write(b"Bot Financiero con Groq Activo")
+            self.wfile.write(b"Bot Financiero con Llama Activo")
         def log_message(self, format, *args):
             return
             
