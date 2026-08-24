@@ -4,26 +4,25 @@ import threading
 from datetime import datetime, timedelta
 
 # =====================================================================
-# CONFIGURACIÓN DE ZONA HORARIA DE COSTA RICA (GMT-6)
+# FORCE COSTA RICA TIME ZONE (GMT-6)
 # =====================================================================
 os.environ['TZ'] = 'America/Costa_Rica'
 try:
     time.tzset()
 except AttributeError:
-    pass  # Compatibilidad si pruebas localmente en Windows
+    pass
 
 import requests
 import telebot
 from groq import Groq
 
 # =====================================================================
-# CREDENCIALES: El servidor en la nube las leerá de forma segura
+# CONFIGURATION
 # =====================================================================
 TELEGRAM_TOKEN = "8588011211:AAF8PokOcIiPQhcz-d4yvkM7k-jCwpYgjMk"
 CHAT_ID = "7682778658"
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 
-# Inicializar conexiones de alta velocidad
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 ai_client = Groq(api_key=GROQ_API_KEY)
 
@@ -32,80 +31,67 @@ MODO_TITULARES_VIVO = False
 ALERTAS_PROCESADAS = set()
 
 # =====================================================================
-# COMANDOS DE CONTROL DESDE TELEGRAM
+# TELEGRAM BOT CONTROLS
 # =====================================================================
 @bot.message_handler(commands=['on'])
 def encender_bot(message):
     global BOT_ACTIVO
     BOT_ACTIVO = True
-    bot.reply_to(message, "🟢 *Sistema Activado.* Monitoreando Forex Factory e IA en hora de Costa Rica...", parse_mode="Markdown")
+    bot.reply_to(message, "🟢 Sistema Activado. Monitoreando Forex Factory de forma segura en hora de Costa Rica...")
 
 @bot.message_handler(commands=['off'])
 def apagar_bot(message):
     global BOT_ACTIVO
     BOT_ACTIVO = False
-    bot.reply_to(message, "🔴 *Sistema Pausado.* IA desconectada para congelar consumo.", parse_mode="Markdown")
+    bot.reply_to(message, "🔴 Sistema Pausado. IA desconectada de forma correcta.")
 
 @bot.message_handler(commands=['discurso'])
 def conmutar_discurso(message):
     global MODO_TITULARES_VIVO
     MODO_TITULARES_VIVO = not MODO_TITULARES_VIVO
-    estado = "ACTIVADO 🎙️ (Traducción ráfaga instantánea)" if MODO_TITULARES_VIVO else "DESACTIVADO 📊"
-    bot.reply_to(message, f"⚡ *Modo Titulares en Vivo:* {estado}", parse_mode="Markdown")
+    estado = "ACTIVADO (Traducción ráfaga instantánea)" if MODO_TITULARES_VIVO else "DESACTIVADO"
+    bot.reply_to(message, f"⚡ Modo Titulares en Vivo: {estado}")
 
 # =====================================================================
-# MOTOR COGNITIVO INTERMERCADO (IA Mente Abierta - Llama 3 70B)
+# MOTOR COGNITIVO INTERMERCADO (Llama 3 70B - Blindado sin Markdown)
 # =====================================================================
 def consultar_ia_profunda(prompt):
-    """Consulta al supercomputador de Groq sin restricciones de red."""
     try:
         completion = ai_client.chat.completions.create(
             model="llama3-70b-8192",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.1
         )
-        return completion.choices[0].message.content
+        return completion.choices.message.content
     except Exception as e:
         return f"⚠️ Error en nodo de IA: {e}"
 
 def procesar_escenarios_10min(evento, divisa, previo, pronostico):
     if not BOT_ACTIVO: return
-    prompt = f"""Analiza con mente abierta de trader profesional la noticia macroeconómica: {evento} ({divisa}). Previo: {previo}, Pronóstico: {pronostico}.
-    Genera dos escenarios interpretativos concisos (Si sale Mayor o Menor al pronóstico). Indica el impacto neto (Sube/Baja/Sin Impacto) en base a correlaciones modernas para: ORO, BITCOIN, USD, EUR. 
-    Sé directo, usa viñetas, responde en español y no agregues introducciones."""
+    prompt = f"Analiza la noticia macroeconómica: {evento} ({divisa}). Previo: {previo}, Pronóstico: {pronostico}. Genera dos escenarios interpretativos muy breves (Si sale Mayor o Menor al pronóstico). Indica el impacto neto (Sube/Baja/Sin Impacto) para: ORO, BITCOIN, USD, EUR. Sé muy directo, usa viñetas simples en español y no uses asteriscos ni formatos especiales de texto."
     
     analisis = consultar_ia_profunda(prompt)
-    bot.send_message(CHAT_ID, f"⏳ **NOTICIA EN 10 MINUTOS:**\n\n{analisis}", parse_mode="Markdown")
+    bot.send_message(CHAT_ID, f"⏳ NOTICIA EN 10 MINUTOS:\n\n{analisis}")
 
 def procesar_dato_publicado(evento, divisa, pronostico, dato_real):
     if not BOT_ACTIVO: return
-    prompt = f"""Urgente: Se publicó el dato real de {evento} ({divisa}). Resultado: {dato_real} frente a Pronóstico: {pronostico}.
-    Determina de inmediato el veredicto del mercado con criterio financiero avanzado. Genera la dirección exacta (Sube/Baja/Sin Impacto) para: ORO, BITCOIN, USD, EUR.
-    Formato ultra-directo en español, sin texto de relleno conversacional."""
+    prompt = f"Se publicó el dato real de {evento} ({divisa}). Resultado: {dato_real} frente a Pronóstico: {pronostico}. Determina la dirección exacta de impacto (Sube/Baja/Sin Impacto) para: ORO, BITCOIN, USD, EUR. Formato ultra-directo en español, usa viñetas simples y no uses asteriscos ni formatos especiales de texto."
     
     analisis = consultar_ia_profunda(prompt)
-    bot.send_message(CHAT_ID, f"📢 **DATO PUBLICADO EN VIVO:**\n\n{analisis}", parse_mode="Markdown")
+    bot.send_message(CHAT_ID, f"📢 DATO PUBLICADO EN VIVO:\n\n{analisis}")
 
-# =====================================================================
-# ESCUCHADOR DE TITULARES EN VIVO (Para Donald Trump / Discursos FED)
-# =====================================================================
 def procesar_titular_discurso_rapido(titular_ingles, fuente):
-    """Traduce e interpreta el sentimiento de ráfagas de texto en milisegundos."""
     if not BOT_ACTIVO or not MODO_TITULARES_VIVO: return
-    
-    prompt = f"""Traduce al español e interpreta el impacto financiero inmediato del siguiente titular en vivo de {fuente}:
-    "{titular_ingles}"
-    Indica la reacción rápida del mercado para Oro, Bitcoin y USD. Formato de ráfaga de 3 líneas máximo."""
+    prompt = f"Traduce al español e interpreta el impacto financiero rápido para Oro, Bitcoin y USD del siguiente titular de {fuente}: '{titular_ingles}'. Máximo 3 líneas directas, sin usar asteriscos ni formatos especiales de texto."
     
     analisis = consultar_ia_profunda(prompt)
-    bot.send_message(CHAT_ID, f"🎙️ **TITULAR EN VIVO ({fuente}):**\n\n{analisis}", parse_mode="Markdown")
+    bot.send_message(CHAT_ID, f"🎙️ TITULAR EN VIVO ({fuente}):\n\n{analisis}")
 
 # =====================================================================
-# TUBERÍA DE DATOS CON INTERNET ABIERTO (Forex Factory Real-Time)
+# TUBERÍA DE DATOS CON INTERNET ABIERTO (Forex Factory)
 # =====================================================================
 def bucle_calendario_infinito():
     print("Motor de datos conectado a Internet Abierto de Render. Sincronizado GMT-6.")
-    # URL de API institucional de calendario económico (Abierta en Render)
     url_calendar = "https://financialmodelingprep.com"
     
     while True:
@@ -113,7 +99,6 @@ def bucle_calendario_infinito():
             time.sleep(20)
             continue
         try:
-            # En Render esta línea corre libremente sin dar jamás Error 403
             response = requests.get(url_calendar, timeout=10).json()
             ahora_cr = datetime.now()
             
@@ -147,16 +132,39 @@ def bucle_calendario_infinito():
 # =====================================================================
 @bot.message_handler(commands=['test'])
 def comando_testeo(message):
-    bot.reply_to(message, "⚡ *Conectando con la IA de rango institucional...*")
+    bot.reply_to(message, "⏳ Procesando matrices analíticas de la IA...")
     procesar_escenarios_10min("Nóminas No Agrícolas (NFP)", "USD", "150K", "180K")
     time.sleep(2)
     procesar_dato_publicado("Nóminas No Agrícolas (NFP)", "USD", "180K", "220K")
-    time.sleep(2)
-    bot.send_message(CHAT_ID, "📝 *Simulando ráfaga de discurso (Modo Titulares)...*")
-    procesar_titular_discurso_rapido("TRUMP SAYS NEW 20% TARIFFS ON ALL EUROPEAN GOODS ARE COMING SOON", "Reuters X")
+
+# =====================================================================
+# SISTEMA DE COMPATIBILIDAD DE PUERTOS WEB PARA RENDER FREE
+# =====================================================================
+def abrir_puerto_falso_render():
+    """Abre un puerto HTTP básico en el hilo principal para obligar a Render a dar luz verde."""
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+    class ServidorFalso(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"Bot Financiero Activo de Forma Correcta")
+        def log_message(self, format, *args):
+            return  # Silenciar registros de red innecesarios
+            
+    puerto = int(os.environ.get("PORT", 10000))
+    server = HTTPServer(('0.0.0.0', puerto), ServidorFalso)
+    server.serve_forever()
 
 if __name__ == "__main__":
+    # Arrancar la tubería macroeconómica en segundo plano
     hilo_noticias = threading.Thread(target=bucle_calendario_infinito)
     hilo_noticias.daemon = True
     hilo_noticias.start()
+    
+    # Arrancar el servidor HTTP falso en un hilo paralelo para calmar a Render
+    hilo_puerto = threading.Thread(target=abrir_puerto_falso_render)
+    hilo_puerto.daemon = True
+    hilo_puerto.start()
+    
+    # Iniciar la escucha permanente de comandos de Telegram
     bot.infinity_polling()
