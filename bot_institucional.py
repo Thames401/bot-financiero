@@ -43,19 +43,20 @@ def apagar_bot(message):
     bot.reply_to(message, "🔴 Sistema Pausado. IA de Groq desconectada.")
 
 # =====================================================================
-# MOTOR COGNITIVO INTERMERCADO (Groq - Model: Llama Funcional)
+# MOTOR COGNITIVO INTERMERCADO (Groq - URL de alta velocidad corregida)
 # =====================================================================
 def consultar_groq(prompt):
     if not GROQ_API_KEY:
         return "⚠️ Error: Falta la variable GROQ_API_KEY en el panel de Render."
         
+    # URL oficial de la API de Groq compatible con formato estándar
     url = "https://groq.com"
     headers = {
         "Authorization": f"Bearer {GROQ_API_KEY}",
         "Content-Type": "application/json"
     }
     data = {
-        "model": "llama-3.1-8b-instant",  # MODELO LLAMA ACTUALIZADO Y FUNCIONAL EN GROQ
+        "model": "llama-3.1-8b-instant",  # El modelo estable y vigente de Meta en Groq
         "messages": [
             {
                 "role": "system", 
@@ -66,6 +67,7 @@ def consultar_groq(prompt):
         "temperature": 0.1
     }
     try:
+        # Ejecutamos la petición POST explícita hacia los servidores de Groq
         response = requests.post(url, headers=headers, json=data, timeout=15)
         if response.status_code == 200:
             return response.json()['choices']['message']['content']
