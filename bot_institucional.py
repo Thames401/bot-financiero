@@ -16,7 +16,7 @@ import requests
 import telebot
 
 # =====================================================================
-# CONFIGURATION: Conexión nativa con OpenAI y Telegram
+# CONFIGURATION DIRECTA Y LIMPIA
 # =====================================================================
 TELEGRAM_TOKEN = "8588011211:AAGOi_-kKtd120plC0Kx45qCW5_MXavcF4o"
 CHAT_ID = "7682778658"
@@ -34,22 +34,21 @@ ALERTAS_PROCESADAS = set()
 def encender_bot(message):
     global BOT_ACTIVO
     BOT_ACTIVO = True
-    bot.reply_to(message, "🟢 Sistema Activado. Monitoreando Forex Factory con Llama en hora de Costa Rica...")
+    bot.reply_to(message, "🟢 Sistema Activado de forma limpia. Monitoreando Forex Factory con Llama en hora de Costa Rica...")
 
 @bot.message_handler(commands=['off'])
 def apagar_bot(message):
     global BOT_ACTIVO
     BOT_ACTIVO = False
-    bot.reply_to(message, "🔴 Sistema Pausado. IA de Groq desconectada.")
+    bot.reply_to(message, "🔴 Sistema Pausado. IA de Groq desconectada de forma correcta.")
 
 # =====================================================================
-# MOTOR COGNITIVO INTERMERCADO (Groq - URL de alta velocidad corregida)
+# MOTOR COGNITIVO INTERMERCADO (Groq - Conexión Nativa mediante Librería Requests)
 # =====================================================================
 def consultar_groq(prompt):
     if not GROQ_API_KEY:
         return "⚠️ Error: Falta la variable GROQ_API_KEY en el panel de Render."
         
-    # URL oficial de la API de Groq compatible con formato estándar
     url = "https://groq.com"
     headers = {
         "Authorization": f"Bearer {GROQ_API_KEY}",
@@ -67,7 +66,6 @@ def consultar_groq(prompt):
         "temperature": 0.1
     }
     try:
-        # Ejecutamos la petición POST explícita hacia los servidores de Groq
         response = requests.post(url, headers=headers, json=data, timeout=15)
         if response.status_code == 200:
             return response.json()['choices']['message']['content']
