@@ -50,6 +50,7 @@ def consultar_groq(prompt):
         return "⚠️ Error: Falta la variable GROQ_API_KEY en el panel de Render."
         
     url = "https://groq.com"
+
     headers = {
         "Authorization": f"Bearer {GROQ_API_KEY}",
         "Content-Type": "application/json"
