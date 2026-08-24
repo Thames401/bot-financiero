@@ -18,7 +18,7 @@ import telebot
 # =====================================================================
 # CONFIGURATION: Conexión nativa con OpenAI y Telegram
 # =====================================================================
-TELEGRAM_TOKEN = "8588011211:AAGnKe_t_XwPUojiLiwzUdZtIM-7tbIkjH4"
+TELEGRAM_TOKEN = "8588011211:AAGOi_-kKtd120plC0Kx45qCW5_MXavcF4o"
 CHAT_ID = "7682778658"
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 
