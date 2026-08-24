@@ -28,26 +28,39 @@ BOT_ACTIVO = True
 ALERTAS_PROCESADAS = set()
 
 # =====================================================================
+# FUNCIÓN MAESTRA: FRAGMENTADORA DE SEGURIDAD (ANTI-MESSAGE TOO LONG)
+# =====================================================================
+def enviar_mensaje_seguro(chat_id, texto):
+    """Corta y envía cualquier texto largo en bloques de seguridad para evitar el Error 400."""
+    limite = 3500  # Margen seguro por debajo de los 4,096 de Telegram
+    if len(texto) > limite:
+        for i in range(0, len(texto), limite):
+            bot.send_message(chat_id, texto[i:i+limite])
+            time.sleep(0.5)  # Pausa técnica para evitar el spam en Telegram
+    else:
+        bot.send_message(chat_id, texto)
+
+# =====================================================================
 # TELEGRAM BOT CONTROLS
 # =====================================================================
 @bot.message_handler(commands=['on'])
 def encender_bot(message):
     global BOT_ACTIVO
     BOT_ACTIVO = True
-    bot.reply_to(message, "🟢 Sistema Activado. Monitoreando Forex Factory e IA de OpenAI (GPT-4o-mini) de forma ultra-compacta...")
+    bot.reply_to(message, "🟢 Sistema Activado. Monitoreando Forex Factory de forma compacta y 100% blindada contra mensajes largos...")
 
 @bot.message_handler(commands=['off'])
 def apagar_bot(message):
     global BOT_ACTIVO
     BOT_ACTIVO = False
-    bot.reply_to(message, "🔴 Sistema Pausado. IA desconectada.")
+    bot.reply_to(message, "🔴 Sistema Pausado. IA desconectada de forma correcta.")
 
 # =====================================================================
-# MOTOR COGNITIVO INTERMERCADO (OpenAI - Con Límite Estricto de Texto)
+# MOTOR COGNITIVO INTERMERCADO (OpenAI - GPT-4o-mini de alta velocidad)
 # =====================================================================
 def consultar_openai(prompt):
     if not OPENAI_API_KEY:
-        return "⚠️ Error: Falta la variable OPENAI_API_KEY en Render."
+        return "⚠️ Error: Falta la variable OPENAI_API_KEY en el panel de Render."
         
     url = "https://openai.com"
     headers = {
@@ -59,35 +72,34 @@ def consultar_openai(prompt):
         "messages": [
             {
                 "role": "system", 
-                "content": "Eres un bot de trading institucional. Responde de forma ultra-corta, directa y resumida. Usa únicamente viñetas directas. Prohibido saludar, prohibido agregar preámbulos, conclusiones o párrafos explicativos. Sé breve."
+                "content": "Eres un analista macroeconómico de Wall Street. Responde de forma ultra-directa, resumida y fría. Usa únicamente viñetas directas. Prohibido saludar, prohibido agregar preámbulos, conclusiones, introducciones o explicaciones."
             },
             {"role": "user", "content": prompt}
         ],
-        "temperature": 0.1,
-        "max_tokens": 300  # LIMITACIÓN FÍSICA: Corta el mensaje si la IA intenta escribir de más
+        "temperature": 0.1
     }
     try:
         response = requests.post(url, headers=headers, json=data, timeout=15)
         if response.status_code == 200:
             return response.json()['choices']['message']['content']
         else:
-            return f"⚠️ Error de OpenAI: {response.status_code}\nDetalles: {response.text}"
+            return f"⚠️ Error en OpenAI: {response.status_code}\nDetalles: {response.text}"
     except Exception as e:
-        return f"⚠️ Error de red con OpenAI: {e}"
+        return f"⚠️ Error crítico de conexión: {e}"
 
 def procesar_escenarios_10min(evento, divisa, previo, pronostico):
     if not BOT_ACTIVO: return
     prompt = f"Noticia: {evento} ({divisa}). Previo: {previo}, Pronóstico: {pronostico}. Genera Escenario A (Si el dato sale Mayor al pronóstico) y Escenario B (Si sale Menor). Indica la dirección neta (Sube/Baja/Sin Impacto) para: ORO, BITCOIN, USD, EUR. Usa solo viñetas simples, sin asteriscos ni negritas."
     
     analisis = consultar_openai(prompt)
-    bot.send_message(CHAT_ID, f"⏳ NOTICIA EN 10 MINUTOS:\n\n{analisis}")
+    enviar_mensaje_seguro(CHAT_ID, f"⏳ NOTICIA EN 10 MINUTOS:\n\n{analisis}")
 
 def procesar_dato_publicado(evento, divisa, pronostico, dato_real):
     if not BOT_ACTIVO: return
     prompt = f"Publicado: {evento} ({divisa}). Real: {dato_real} frente a Pronóstico: {pronostico}. Determina el impacto inmediato (Sube/Baja/Sin Impacto) para: ORO, BITCOIN, USD, EUR. Usa solo viñetas simples, sin asteriscos ni negritas."
     
     analisis = consultar_openai(prompt)
-    bot.send_message(CHAT_ID, f"📢 DATO PUBLICADO EN VIVO:\n\n{analisis}")
+    enviar_mensaje_seguro(CHAT_ID, f"📢 DATO PUBLICADO EN VIVO:\n\n{analisis}")
 
 # =====================================================================
 # TUBERÍA DE DATOS CON INTERNET ABIERTO (Forex Factory)
@@ -132,7 +144,7 @@ def bucle_calendario_infinito():
 # =====================================================================
 @bot.message_handler(commands=['test'])
 def comando_testeo(message):
-    bot.reply_to(message, "⏳ Procesando matrices analíticas compactas con OpenAI...")
+    bot.reply_to(message, "⏳ Procesando matrices analíticas blindadas con OpenAI...")
     procesar_escenarios_10min("Nóminas No Agrícolas (NFP)", "USD", "150K", "180K")
     time.sleep(2)
     procesar_dato_publicado("Nóminas No Agrícolas (NFP)", "USD", "180K", "220K")
