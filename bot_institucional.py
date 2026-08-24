@@ -25,7 +25,6 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 
 BOT_ACTIVO = True
-MODO_TITULARES_VIVO = False
 ALERTAS_PROCESADAS = set()
 
 # =====================================================================
@@ -35,73 +34,66 @@ ALERTAS_PROCESADAS = set()
 def encender_bot(message):
     global BOT_ACTIVO
     BOT_ACTIVO = True
-    bot.reply_to(message, "🟢 Sistema Activado. Monitoreando Forex Factory e IA de OpenAI (GPT-4o-mini) en hora de Costa Rica...")
+    bot.reply_to(message, "🟢 Sistema Activado. Monitoreando Forex Factory e IA de OpenAI (GPT-4o-mini) de forma ultra-compacta...")
 
 @bot.message_handler(commands=['off'])
 def apagar_bot(message):
     global BOT_ACTIVO
     BOT_ACTIVO = False
-    bot.reply_to(message, "🔴 Sistema Pausado. IA desconectada de forma correcta.")
-
-@bot.message_handler(commands=['discurso'])
-def conmutar_discurso(message):
-    global MODO_TITULARES_VIVO
-    MODO_TITULARES_VIVO = not MODO_TITULARES_VIVO
-    estado = "ACTIVADO (Traducción ráfaga instantánea con OpenAI)" if MODO_TITULARES_VIVO else "DESACTIVADO"
-    bot.reply_to(message, f"⚡ Modo Titulares en Vivo: {estado}")
+    bot.reply_to(message, "🔴 Sistema Pausado. IA desconectada.")
 
 # =====================================================================
-# MOTOR COGNITIVO INTERMERCADO (OpenAI - GPT-4o-mini de alta velocidad)
+# MOTOR COGNITIVO INTERMERCADO (OpenAI - Con Límite Estricto de Texto)
 # =====================================================================
 def consultar_openai(prompt):
-    """Llama a la API oficial de OpenAI mediante HTTP directo."""
+    if not OPENAI_API_KEY:
+        return "⚠️ Error: Falta la variable OPENAI_API_KEY en Render."
+        
     url = "https://openai.com"
     headers = {
         "Authorization": f"Bearer {OPENAI_API_KEY}",
         "Content-Type": "application/json"
     }
     data = {
-        "model": "gpt-4o-mini",  # El modelo más eficiente, económico y preciso del mercado
-        "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.1
+        "model": "gpt-4o-mini",
+        "messages": [
+            {
+                "role": "system", 
+                "content": "Eres un bot de trading institucional. Responde de forma ultra-corta, directa y resumida. Usa únicamente viñetas directas. Prohibido saludar, prohibido agregar preámbulos, conclusiones o párrafos explicativos. Sé breve."
+            },
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.1,
+        "max_tokens": 300  # LIMITACIÓN FÍSICA: Corta el mensaje si la IA intenta escribir de más
     }
     try:
         response = requests.post(url, headers=headers, json=data, timeout=15)
         if response.status_code == 200:
-            return response.json()['choices'][0]['message']['content']
+            return response.json()['choices']['message']['content']
         else:
-            return f"⚠️ Error de OpenAI: {response.status_code} - {response.text}"
+            return f"⚠️ Error de OpenAI: {response.status_code}\nDetalles: {response.text}"
     except Exception as e:
-        return f"⚠️ Error de conexión con OpenAI: {e}"
+        return f"⚠️ Error de red con OpenAI: {e}"
 
 def procesar_escenarios_10min(evento, divisa, previo, pronostico):
     if not BOT_ACTIVO: return
-    prompt = f"Analiza la noticia macroeconómica: {evento} ({divisa}). Previo: {previo}, Pronóstico: {pronostico}. Genera dos escenarios interpretativos muy breves (Si sale Mayor o Menor al pronóstico). Indica el impacto neto (Sube/Baja/Sin Impacto) para: ORO, BITCOIN, USD, EUR. Sé muy directo, usa viñetas simples en español y no utilices asteriscos ni formatos especiales de texto."
+    prompt = f"Noticia: {evento} ({divisa}). Previo: {previo}, Pronóstico: {pronostico}. Genera Escenario A (Si el dato sale Mayor al pronóstico) y Escenario B (Si sale Menor). Indica la dirección neta (Sube/Baja/Sin Impacto) para: ORO, BITCOIN, USD, EUR. Usa solo viñetas simples, sin asteriscos ni negritas."
     
     analisis = consultar_openai(prompt)
     bot.send_message(CHAT_ID, f"⏳ NOTICIA EN 10 MINUTOS:\n\n{analisis}")
 
 def procesar_dato_publicado(evento, divisa, pronostico, dato_real):
     if not BOT_ACTIVO: return
-    prompt = f"Se publicó el dato real de {evento} ({divisa}). Resultado: {dato_real} frente a Pronóstico: {pronostico}. Determina la dirección exacta de impacto (Sube/Baja/Sin Impacto) para: ORO, BITCOIN, USD, EUR. Formato ultra-directo en español, usa viñetas simples y no utilices asteriscos ni formatos especiales de texto."
+    prompt = f"Publicado: {evento} ({divisa}). Real: {dato_real} frente a Pronóstico: {pronostico}. Determina el impacto inmediato (Sube/Baja/Sin Impacto) para: ORO, BITCOIN, USD, EUR. Usa solo viñetas simples, sin asteriscos ni negritas."
     
     analisis = consultar_openai(prompt)
     bot.send_message(CHAT_ID, f"📢 DATO PUBLICADO EN VIVO:\n\n{analisis}")
-
-def procesar_titular_discurso_rapido(titular_ingles, fuente):
-    if not BOT_ACTIVO or not MODO_TITULARES_VIVO: return
-    prompt = f"Traduce al español e interpreta el impacto financiero rápido para Oro, Bitcoin y USD del siguiente titular de {fuente}: '{titular_ingles}'. Máximo 3 líneas directas, sin usar asteriscos ni formatos especiales de texto."
-    
-    analisis = consultar_openai(prompt)
-    bot.send_message(CHAT_ID, f"🎙️ TITULAR EN VIVO ({fuente}):\n\n{analisis}")
 
 # =====================================================================
 # TUBERÍA DE DATOS CON INTERNET ABIERTO (Forex Factory)
 # =====================================================================
 def bucle_calendario_infinito():
-    print("Motor de datos conectado a Internet Abierto de Render. Sincronizado GMT-6.")
     url_calendar = "https://financialmodelingprep.com"
-    
     while True:
         if not BOT_ACTIVO:
             time.sleep(20)
@@ -125,7 +117,7 @@ def bucle_calendario_infinito():
                         procesar_escenarios_10min(noticia.get("event"), noticia.get("currency"), noticia.get("previous", "N/A"), noticia.get("estimate", "N/A"))
                         ALERTAS_PROCESADAS.add(id_noticia)
                 
-                # 2. Veredicto con el Dato Real Publicado (Delay Guard activo)
+                # 2. Veredicto con el Dato Real Publicado
                 if ahora_cr >= fecha_evento:
                     dato_real = noticia.get("actual")
                     if dato_real and (id_noticia + "_real") not in ALERTAS_PROCESADAS:
@@ -136,11 +128,11 @@ def bucle_calendario_infinito():
         time.sleep(30)
 
 # =====================================================================
-# COMANDO DE SIMULACIÓN PARA EVALUAR CALIDAD (/test)
+# COMANDO DE SIMULACIÓN (/test)
 # =====================================================================
 @bot.message_handler(commands=['test'])
 def comando_testeo(message):
-    bot.reply_to(message, "⏳ Procesando matrices analíticas con OpenAI...")
+    bot.reply_to(message, "⏳ Procesando matrices analíticas compactas con OpenAI...")
     procesar_escenarios_10min("Nóminas No Agrícolas (NFP)", "USD", "150K", "180K")
     time.sleep(2)
     procesar_dato_publicado("Nóminas No Agrícolas (NFP)", "USD", "180K", "220K")
