@@ -19,7 +19,7 @@ from groq import Groq
 # =====================================================================
 # CREDENCIALES: El servidor en la nube las leerá de forma segura
 # =====================================================================
-TELEGRAM_TOKEN = 8588011211:AAEHEVm7fyzYjIoOlBehv_poRKNACbGMy1A"
+TELEGRAM_TOKEN = "8588011211:AAEHEVm7fyzYjIoOlBehv_poRKNACbGMy1A"
 CHAT_ID = " 7682778658"
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 
